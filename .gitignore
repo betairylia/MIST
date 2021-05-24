@@ -143,3 +143,4 @@ wandb/
 CIFAR10_feat/
 CIFAR100_feat/
 IMSAT_datasets/
+data/
