@@ -378,6 +378,8 @@ def main():
             eta2 = args.eta2
             objective = ((R_vat + R_vat1)/2) - mu*( (1-gamma)*(eta1*ent_y - c_ent) + gamma*eta2*(-l_p - l_n)  )
 
+            wandb.log({"loss": objective.detach().cpu().data})
+
 
 
             # update the set of parameters in deep neural network by minimizing loss
@@ -403,6 +405,8 @@ def main():
             preds = preds.reshape(1, preds.shape[0])
             clustering_acc = ReturnACC(preds[0], Y[0], C)
         print("and current clustering accuracy is", clustering_acc )
+
+        wandb.log({"accuracy": clustering_acc, "epoch": epoch})
 
 if __name__ == "__main__":
     main()
