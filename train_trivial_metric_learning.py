@@ -239,17 +239,19 @@ def main():
 
             s = np.random.choice(list(range(l_neg)), size=num_neg_pairs, replace=False)
 
-            neg_ip = soft_out1[neg_idx_i[s],:] * soft_out2[neg_idx_j[s],:]
-            neg_ip = torch.sum(neg_ip, 1)
-            neg_loss = torch.log(1 + t2*(1-neg_ip))
-            neg_loss = -torch.sum(neg_loss) / num_neg_pairs
+            # neg_ip = soft_out1[neg_idx_i[s],:] * soft_out2[neg_idx_j[s],:]
+            # neg_ip = torch.sum(neg_ip, 1)
+            # neg_loss = torch.log(1 + t2*(1-neg_ip))
+            # neg_loss = -torch.sum(neg_loss) / num_neg_pairs
 
 
-            pos_ip = soft_out1 * soft_out2
-            pos_ip = torch.sum(pos_ip, 1)
-            pos_loss = torch.log(1 + t1*(1-pos_ip))
-            pos_loss = torch.sum(pos_loss) / m
+            # pos_ip = soft_out1 * soft_out2
+            # pos_ip = torch.sum(pos_ip, 1)
+            # pos_loss = torch.log(1 + t1*(1-pos_ip))
+            # pos_loss = torch.sum(pos_loss) / m
 
+            neg_loss = - torch.mean(torch.sum(soft_out1[neg_idx_i[s],:] * soft_out2[neg_idx_j[s],:], 1))
+            pos_loss = torch.mean(torch.sum(soft_out1 * soft_out2, 1))
 
 
         return pos_loss, neg_loss, soft_out2
