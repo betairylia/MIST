@@ -376,7 +376,8 @@ def main():
                     
             # objective of sim
             eta2 = args.eta2
-            objective = ((R_vat + R_vat1)/2) - mu*( (1-gamma)*(eta1*ent_y - c_ent) + gamma*eta2*(-l_p - l_n)  )
+            # objective = ((R_vat + R_vat1)/2) - mu*( (1-gamma)*(eta1*ent_y - c_ent) + gamma*eta2*(-l_p - l_n)  )
+            objective = ((R_vat + R_vat1)/2) - mu*( (eta1*ent_y - c_ent) + gamma*eta2*(-l_p - l_n)  )
 
             if itr % 25 == 0:
                 wandb.log({"loss": objective.detach().cpu().data})
