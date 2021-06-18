@@ -25,6 +25,8 @@ from munkres import Munkres
 
 from datasets import *
 from utils import *
+from SiameseLoss import *
+from SIM_utils import *
 
 def main():
 
@@ -40,19 +42,26 @@ def main():
     parser.add_argument('--lr', type=float, default=0.002, help='learning rate')
 
     # HP
-    parser.add_argument('--alpha', type=float, default=0.25, help='alpha')
+    parser.add_argument('--alpha_vat', type=float, default=0.25, help='alpha_vat')
+    parser.add_argument('--alpha', type=int, default=1, choices=[0,1,2], help='alpha')
+    parser.add_argument('--INCEvar', type=int, default=0, choices=[0,1,2], help='INCEvar')
+    # parser.add_argument('--beta', type=float, default=0.0, help='beta')
     parser.add_argument('--K', type=int, default=200, help='K (maximum)')
-    parser.add_argument('--K0', type=int, default=5, help='K0 (SIM)')
+    # parser.add_argument('--K0', type=int, default=5, help='K0 (SIM)')
     parser.add_argument('--K_vat', type=int, default=10, help='K (VAT)')
     parser.add_argument('--xi', type=float, default=10.0, help='xi (VAT)')
-    parser.add_argument('--mu', type=float, default=0.1, help='mu')
-    parser.add_argument('--gamma', type=float, default=0.55, help='gamma')
-    parser.add_argument('--eta1', type=float, default=5.0, help='eta1 (Marginal entropy)')
-    parser.add_argument('--eta2', type=float, default=1.0, help='eta2 (Positive pairs)')
-    parser.add_argument('--tau_pos', type=float, default=0.01, help='tau_positive')
+    # parser.add_argument('--mu', type=float, default=0.045, help='mu')
+    # parser.add_argument('--gamma', type=float, default=1.5, help='gamma')
+    # parser.add_argument('--eta', type=float, default=5.0, help='eta (Marginal entropy)')
+    # parser.add_argument('--eta2', type=float, default=1.0, help='eta2 (Positive pairs)')
+    parser.add_argument('--tau', type=float, default=0.05, help='tau')
     # parser.add_argument('--tau_neg', type=float, default=0.01, help='tau_negative') # tau_neg = tau_pos 
     parser.add_argument('--rate', type=float, default=1.0, help='Negative sampling rate (0~1)')
     parser.add_argument('--aug_func', type=str, default='kNNG', help='Augmentation function (not used now)')
+    
+    # Pre-defined pairs
+    parser.add_argument('--K0BetaPair', type=int, default=0, choices=[0,1], help='K0BetaPair')
+    parser.add_argument('--MuEtaGamma', type=int, default=0, choices=[0,1,2], help='MuEtaGamma Pair')
 
     # Worker meta-data
     parser.add_argument('--runid', type=int, default=0, help='Run ID.')
@@ -62,6 +71,29 @@ def main():
 
     # Log into WandB
     wandb.init(project = 'sim', config = vars(args), group = GetArgsStr(args))
+
+    InceVariants = [SiameseLoss_UB, SiameseLoss_Exact, SiameseLoss_Symmetrized]
+    SiameseLoss = InceVariants[args.INCEvar]
+
+    K0_beta_pairs = {
+        "mnist":        [(5, 0), (7, 0)],
+        "stl":          [(5, 0), (7, 0)],
+        "omniglot":     [(5, 0), (7, 0)],
+        "cifar100":     [(7, 0), (10,0)],
+        "svhn":         [(7, 0), (10,0)],
+        "cifar10":      [(10,0), (15,0)],
+        "reuters10k":   [(50, 2.0 / 3.0), (50, 4.0 / 5.0)],
+        "20news":       [(200, 2.0 / 3.0), (200, 4.0 / 5.0)],
+    }
+
+    Mu_Eta_Gamma_pairs = [(0.045, 6.0, 1.5), (0.05, 5.0, 1.5), (0.04, 6.0, 1.5)]
+
+    args.K0 = K0_beta_pairs[args.dataset][args.K0BetaPair][0]
+    args.beta = K0_beta_pairs[args.dataset][args.K0BetaPair][1]
+
+    args.mu = Mu_Eta_Gamma_pairs[args.MuEtaGamma][0]
+    args.eta = Mu_Eta_Gamma_pairs[args.MuEtaGamma][1]
+    args.gamma = Mu_Eta_Gamma_pairs[args.MuEtaGamma][2]
 
     ##########################################################################
     ''' Dataset '''
@@ -84,48 +116,28 @@ def main():
 
     start = time.time()
 
-    alpha = args.alpha
+    alpha_vat = args.alpha_vat
     K = args.K # Number of neighbors
 
-    if False: # X.shape[0] > 5*10**5:
+    knncachestr = "%s-k%d.npy" % (dsetname, K+1)
 
-        nms = NMSlibTransformer(n_neighbors = K) # Compute approximated knn graph
-        Knn_graph = nms.fit_transform(X)
-
-        # define adaptie radius for VAT
-        Knn_dist = Knn_graph.data.reshape(X.shape[0],K+1)
-        R = alpha*Knn_dist[:,K]
-        R = R.reshape(X.shape[0],1) 
-
-        del Knn_graph, Knn_dist
-
-        end = time.time()
-        print(f"{end-start} seconds by Approximated KNN.")
+    if dsetname != "unknown" and os.path.exists(knncachestr):
+        print("Loaded cached kNN from %s" % knncachestr)
+        distances = np.load(knncachestr)
+        indices = np.load("i" + knncachestr)
 
     else:
+        nbrs = NearestNeighbors(n_neighbors=K+1, algorithm='brute').fit(X)
+        distances, indices = nbrs.kneighbors(X)
+        np.save(knncachestr, distances)
+        np.save("i" + knncachestr, indices)
 
-        knncachestr = "%s-k%d.npy" % (dsetname, K+1)
-        
-        if dsetname != "unknown" and os.path.exists(knncachestr):
-            
-            print("Loaded cached kNN from %s" % knncachestr)
-            distances = np.load(knncachestr)
-            indices = np.load("i" + knncachestr)
-        
-        else:
+    K_vat = args.K_vat
+    R = alpha_vat*distances[:,K_vat]
+    R = R.reshape(X.shape[0],1)
 
-            nbrs = NearestNeighbors(n_neighbors=K+1, algorithm='brute').fit(X)
-            distances, indices = nbrs.kneighbors(X)
-            np.save(knncachestr, distances)
-            np.save("i" + knncachestr, indices)
-
-        K_vat = args.K_vat
-        R = alpha*distances[:,K_vat]
-        R = R.reshape(X.shape[0],1)
-
-
-        end = time.time()
-        print(f"{end-start} seconds by Brute-Force KNN.")
+    end = time.time()
+    print(f"{end-start} seconds by Brute-Force KNN.")
 
     ##########################################################################
     ''' Dataloader '''
@@ -159,38 +171,6 @@ def main():
             
             return x
 
-
-
-
-    net = Net()
-
-    # throw net object to gpu
-    net = net.to(dev)
-
-    def conditional_entropy(soft):
-        loss = torch.sum(-soft*torch.log(soft + 1e-8)) / soft.shape[0]
-        return loss
-
-    def entropy(soft):
-        avg_soft = torch.mean(soft, 0, True) 
-        loss = -torch.sum(avg_soft * torch.log(avg_soft + 1e-8))
-        return loss
-
-    def kl(p, q):
-        loss = torch.sum(p * torch.log((p + 1e-8) / (q + 1e-8))) / p.shape[0]
-        return loss
-
-    @contextlib.contextmanager
-    def _disable_tracking_bn_stats(model):
-
-        def switch_attr(m):
-            if hasattr(m, 'track_running_stats'):
-                m.track_running_stats ^= True
-                
-        model.apply(switch_attr)
-        yield
-        model.apply(switch_attr)
-
     def _l2_normalize(d):
         d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
         d /= torch.norm(d_reshaped, dim=1, keepdim=True) + 1e-8
@@ -200,7 +180,7 @@ def main():
 
         optimizer.zero_grad()
         
-        with _disable_tracking_bn_stats(model):
+        with disable_tracking_bn_stats(model):
             with torch.no_grad():
                 target = torch.softmax(model(x), 1) 
             
@@ -221,71 +201,10 @@ def main():
 
         return R_vat
 
-    def SiameseLoss(model, soft_out1, x_agm, t1, t2, r):
+    net = Net()
 
-        m = soft_out1.shape[0]
-        a = np.ones((m,m)) - np.eye(m)
-        a = csr_matrix(a)
-
-        neg_idx_i, neg_idx_j = a.nonzero()
-        del a
-
-        l_neg = neg_idx_i.shape[0]
-        num_neg_pairs = int(l_neg*r)
-
-        
-        with _disable_tracking_bn_stats(model):
-            soft_out2 = torch.softmax(model(x_agm), 1)
-
-            s = np.random.choice(list(range(l_neg)), size=num_neg_pairs, replace=False)
-
-            neg_ip = soft_out1[neg_idx_i[s],:] * soft_out2[neg_idx_j[s],:]
-            neg_ip = torch.sum(neg_ip, 1)
-            neg_loss = torch.log(1 + t2*(1-neg_ip))
-            neg_loss = -torch.sum(neg_loss) / num_neg_pairs
-
-
-            pos_ip = soft_out1 * soft_out2
-            pos_ip = torch.sum(pos_ip, 1)
-            pos_loss = torch.log(1 + t1*(1-pos_ip))
-            pos_loss = torch.sum(pos_loss) / m
-
-
-
-        return pos_loss, neg_loss, soft_out2
-
-    def ReturnACC(cluster, target_cluster, k):
-        """ Compute error between cluster and target cluster
-        :param cluster: proposed cluster
-        :param target_cluster: target cluster
-        k: number of classes
-        :return: error
-        """
-        n = np.shape(target_cluster)[0]
-        M = np.zeros((k, k))
-        for i in range(k):
-            for j in range(k):
-                M[i][j] = np.sum(np.logical_and(cluster == i, target_cluster == j))
-        m = Munkres()
-        indexes = m.compute(-M)
-        corresp = []
-        for i in range(k):
-            corresp.append(indexes[i][1])
-        pred_corresp = [corresp[int(predicted)] for predicted in cluster]
-        acc = np.sum(pred_corresp == target_cluster) / float(len(target_cluster))
-        return acc 
-
-    def get_agm(x, idx_itr, knn_idx):
-        knn_idx_itr = knn_idx[idx_itr,:]
-        for i in range(knn_idx_itr.shape[0]):
-            v = np.random.permutation(knn_idx_itr[i,:])
-            knn_idx_itr[i,:] = v
-
-        v = np.random.choice(list(range(knn_idx_itr.shape[1])), size=1, replace=False)
-        idx0 = knn_idx_itr[:,v[0]]
-        x_agm0 = x[idx0,:]
-        
-        return x_agm0, idx0
+    # throw net object to gpu
+    net = net.to(dev)
 
     ##########################################################################
     ''' Training of IMSAT '''
@@ -305,7 +224,7 @@ def main():
 
     mu = args.mu
     gamma = args.gamma
-    eta1 = args.eta1
+    eta = args.eta
 
 
 
@@ -317,14 +236,23 @@ def main():
 
 
     ## tau_pos = 2 or 5 is good for reuters, c=10,20 tau_pos =.75?
-    tau_pos = args.tau_pos
-    tau_neg = tau_pos # TODO: args.tau_neg
+    tau = args.tau
+    alpha = args.alpha ## alpha-exp family -> choose alpha = 0 or 1 or 2
+    # tau_neg = tau_pos # TODO: args.tau_neg
 
+    #should be smaller than K=200, here we define T(x) for each x, K0 = 5, 7, 15, 100, 200(=K)
+    #mnist, svhn, stl, omniglot, cifar100 -> K0=7
+    #reuters10k -> K0=50
+    #20news -> K0=200
+    #cifar10 -> K0=15
+    K0 = args.K0
+
+
+    beta = args.beta ## 20news, reuters10K -> beta=4/5, the others -> beta=0
 
     # given the number of negative, how much rate of them should be used for trainingm, rate=1
     # means 100% used
-    rate = args.rate
-
+    # rate = args.rate
 
     #itr_num = 0
     print("Start training of SIM_agm.")
@@ -332,7 +260,7 @@ def main():
         print("At ", epoch, "-th epoch, ")
 
         # set empiricial loss to 0 in the beginning of epoch
-        empirical_loss = 0.0
+        empirical_objective_loss = 0.0
 
         idx_eph = np.random.permutation(X.shape[0])
         
@@ -346,56 +274,46 @@ def main():
             # define components at each iteration
             X_itr = X[idx_itr,:]
 
+            ########################## transformation function related part ##############
+            if beta == 0:
+                X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, indices[:,1:K0+1]) #except 20news reuters10k
+            else:
+                X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, indices[:,int(beta*K0):K0+1]) #20news or reuters10k
 
-            K0 = args.K0 #should be smaller than K=200, here we define T(x) for each x, K0 = 5, 10, 15, 20, 25, 50, 100, 150, 200(=K)
-            
-            # TODO: args.aug_func
-            X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, indices[:,1:K0+1])
-            # X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, indices[:,int(2*K0/3):K0+1])
-            # X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, indices[:,int(K0/2):K0+1])
-            
-
-
-            R_vat = return_vat_Loss(net, X_itr, xi, R[idx_itr,:])
-            R_vat1 = return_vat_Loss(net, X_agm1_itr, xi, R[idx_agm1_itr,:])
-
-
+            #################### VAT loss ################
+            l_vat = return_vat_Loss(net, X_itr, xi, R[idx_itr,:])
+            l_vat1 = return_vat_Loss(net, X_agm1_itr, xi, R[idx_agm1_itr,:])
 
             soft_out_itr = torch.softmax(net(X_itr) , 1)
-        
 
-            ## define positive and negative loss
-            l_p, l_n, soft_out_agm1_itr = SiameseLoss(net, soft_out_itr, X_agm1_itr, tau_pos, tau_neg, rate)
-
+            ####################### Siamese loss (or I_nce) related part ###########
+            ## define positive and negative loss, where tau is a fixed value
+            l_s, soft_out_agm1_itr = SiameseLoss(net, soft_out_itr, X_agm1_itr, tau, alpha)
+            
+            ######################## I(X;Y) related part #######################
             ## define entropy of y
             ent_y = entropy(torch.cat((soft_out_itr, soft_out_agm1_itr),0))
 
             ## define shannon conditional entropy loss H(p(y|x)) named by c_ent.
             c_ent = conditional_entropy(torch.cat((soft_out_itr, soft_out_agm1_itr),0))
             
-                    
+            ######################### our objective defined ##################        
             # objective of sim
-            eta2 = args.eta2
-            # objective = ((R_vat + R_vat1)/2) - mu*( (1-gamma)*(eta1*ent_y - c_ent) + gamma*eta2*(-l_p - l_n)  )
-            objective = ((R_vat + R_vat1)/2) - mu*( (eta1*ent_y - c_ent) + gamma*eta2*(-l_p - l_n)  )
+            objective = ((l_vat + l_vat1)/2) - mu*(  (eta*ent_y - c_ent) + gamma*( l_s )  )
 
             if itr % 25 == 0:
                 wandb.log({"loss": objective.detach().cpu().data})
-
-
 
             # update the set of parameters in deep neural network by minimizing loss
             optimizer.zero_grad() 
             objective.backward()
             optimizer.step()
 
-            empirical_loss = empirical_loss + objective.data
+            empirical_objective_loss = empirical_objective_loss + objective.data
 
-
-
-        #empirical_loss = running_loss/m
-        empirical_loss = empirical_loss.cpu().numpy()
-        print("average empirical loss is", empirical_loss/m, ',')
+        # #empirical_loss = running_loss/m
+        empirical_objective_loss = empirical_objective_loss.cpu().numpy()
+        print("average empirical objective loss is", empirical_objective_loss/m, ',')
 
         net.eval()
 

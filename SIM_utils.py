@@ -5,6 +5,48 @@ import numpy as np
 from munkres import Munkres
 import contextlib
 
+def Knn2Adj(idx, k):
+
+    n = idx.shape[0]
+
+    idx_i = np.array(range(n))
+    idx_i = np.tile(idx_i, (k+1,1)).transpose().reshape(1, n*(k+1))[0]
+    idx_j = idx.reshape(1, n*(k+1))[0]
+
+    adj = csc_matrix((np.ones(n*(k+1)),(idx_i,idx_j)), shape=(n,n)).astype(float)
+    e = identity(n)
+    adj = adj - e
+    adj = adj + adj.transpose() - adj.multiply(adj.transpose())
+
+    del idx_i, idx_j, e
+
+    return adj
+
+
+
+def build_gnng(K_g, indices):
+    KnnIDXwithKg = indices[:,0:K_g+1]
+    A = Knn2Adj(KnnIDXwithKg, K_g)
+
+    start = time.time()
+    # geodesic_dist = csc_matrix(sp.sparse.csgraph.johnson(A))
+    g_distances = sp.sparse.csgraph.johnson(A)
+    del A
+    g_distances = np.where( (g_distances==np.inf) | (g_distances==0), 0, g_distances) 
+    m = np.min(np.count_nonzero(g_distances, axis=1))
+    n = g_distances.shape[1]
+    g_indices = np.argsort(g_distances, axis=0)
+    #g_indices = g_indices[:,n-K_g:n]
+    g_indices = g_indices[:,n-m:n]
+    g_distances = csc_matrix(g_distances)
+    #del geodesic_dist
+    #geodesic_dist = np.where(geodesic_dist>0, 1, geodesic_dist)
+    #geodesic_nng = geodesic_dist.nonzero()
+    end = time.time()
+    print(f"{end-start} seconds by computing geodesic distance.")
+
+    return g_distances, g_indices
+
 def conditional_entropy(soft):
     loss = torch.sum(-soft*torch.log(soft + 1e-8)) / soft.shape[0]
     return loss
@@ -19,7 +61,7 @@ def kl(p, q):
     return loss
 
 @contextlib.contextmanager
-def _disable_tracking_bn_stats(model):
+def disable_tracking_bn_stats(model):
 
     def switch_attr(m):
         if hasattr(m, 'track_running_stats'):
@@ -28,69 +70,6 @@ def _disable_tracking_bn_stats(model):
     model.apply(switch_attr)
     yield
     model.apply(switch_attr)
-
-def _l2_normalize(d):
-    d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
-    d /= torch.norm(d_reshaped, dim=1, keepdim=True) + 1e-8
-    return d
-
-def return_vat_Loss(model, x, xi, eps):
-
-    optimizer.zero_grad()
-    
-    with _disable_tracking_bn_stats(model):
-        with torch.no_grad():
-            target = torch.softmax(model(x), 1) 
-        
-        d = torch.randn(x.shape).to(dev)
-        d = _l2_normalize(d)
-        d.requires_grad_()
-        out_vadv = model(x + xi*d)
-        hat = torch.softmax(out_vadv, 1)
-        adv_distance = kl(target, hat)
-
-        adv_distance.backward()
-        
-        d = _l2_normalize(d.grad)
-        r_adv = eps * d
-        out_vadv = model(x + r_adv)
-        hat = torch.softmax(out_vadv, 1)
-        R_vat = kl(target, hat)
-
-    return R_vat
-
-def SiameseLoss(model, soft_out1, x_agm, t1, t2, r):
-
-    m = soft_out1.shape[0]
-    a = np.ones((m,m)) - np.eye(m)
-    a = csr_matrix(a)
-
-    neg_idx_i, neg_idx_j = a.nonzero()
-    del a
-
-    l_neg = neg_idx_i.shape[0]
-    num_neg_pairs = int(l_neg*r)
-
-    
-    with _disable_tracking_bn_stats(model):
-        soft_out2 = torch.softmax(model(x_agm), 1)
-
-        s = np.random.choice(list(range(l_neg)), size=num_neg_pairs, replace=False)
-
-        neg_ip = soft_out1[neg_idx_i[s],:] * soft_out2[neg_idx_j[s],:]
-        neg_ip = torch.sum(neg_ip, 1)
-        neg_loss = torch.log(1 + t2*(1-neg_ip))
-        neg_loss = -torch.sum(neg_loss) / num_neg_pairs
-
-
-        pos_ip = soft_out1 * soft_out2
-        pos_ip = torch.sum(pos_ip, 1)
-        pos_loss = torch.log(1 + t1*(1-pos_ip))
-        pos_loss = torch.sum(pos_loss) / m
-
-
-
-    return pos_loss, neg_loss, soft_out2
 
 def ReturnACC(cluster, target_cluster, k):
     """ Compute error between cluster and target cluster
@@ -113,11 +92,13 @@ def ReturnACC(cluster, target_cluster, k):
     acc = np.sum(pred_corresp == target_cluster) / float(len(target_cluster))
     return acc 
 
+
+
 def get_agm(x, idx_itr, knn_idx):
     knn_idx_itr = knn_idx[idx_itr,:]
     for i in range(knn_idx_itr.shape[0]):
-        v = np.random.permutation(knn_idx_itr[i,:])
-        knn_idx_itr[i,:] = v
+      v = np.random.permutation(knn_idx_itr[i,:])
+      knn_idx_itr[i,:] = v
 
     v = np.random.choice(list(range(knn_idx_itr.shape[1])), size=1, replace=False)
     idx0 = knn_idx_itr[:,v[0]]
