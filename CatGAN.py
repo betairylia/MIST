@@ -415,7 +415,7 @@ parser.add_argument('--dataset', type=str, default='mnist')
 args = parser.parse_args()
 
 TRAIN_BATCH_SIZE=256
-EPOCH=100
+EPOCH=64
 validation_split = .2
 shuffle_dataset = True
 random_seed= 42
@@ -442,6 +442,8 @@ from datasets import GetData
 
 X, Y, _, dim, C = GetData(args.dataset)
 dataset = TensorDataset(torch.FloatTensor(X), torch.LongTensor(Y).squeeze())
+nb_training_label=0
+nb_class = C
 
 mnist_dataset=MNIST_Dataset(dataset)
 
@@ -453,7 +455,7 @@ mnist_dataset=MNIST_Dataset(dataset)
 dataset_size = len(dataset)
 
 # Unsupervised so commented out
-# indices = list(range(dataset_size))
+indices = list(range(dataset_size))
 # split = int(np.floor(validation_split * dataset_size))
 # if shuffle_dataset :
 #     np.random.seed(random_seed)
@@ -461,7 +463,8 @@ dataset_size = len(dataset)
 # train_indices, val_indices = indices[split:], indices[:split]
 
 # idx_label=choose_label_rand(mnist_dataset, nb_training_label, nb_class, train_indices)
-# mnist_dataset.use_label_mask[idx_label]=True
+idx_label=choose_label_rand(mnist_dataset, nb_training_label, nb_class, indices)
+mnist_dataset.use_label_mask[idx_label]=True
 
 # # Creating PT data samplers and loaders:
 # train_sampler = SubsetRandomSampler(train_indices)
@@ -520,6 +523,8 @@ val_marginal_entropies_fake=[]
 discriminator = discriminator.to(device)
 generator = generator.to(device)
 
+maxacc = 0
+
 for epoch in range(EPOCH):
     t0 = time.time()    
     print(f"\n=============== EPOCH {epoch+1} / {EPOCH} ===============\n")
@@ -549,8 +554,14 @@ for epoch in range(EPOCH):
     val_cross_entropies.append(val_cross_entropies_tmp)
     val_conditional_entropies_fake.append(val_conditional_entropies_fake_tmp)
     val_marginal_entropies_fake.append(val_marginal_entropies_fake_tmp)
+
+    maxacc = max(maxacc, tmp_evaluate['accuracy'])
     
     # print(f"\t§§ CatGAN model has been saved §§")
     # torch.save(discriminator, f"mnist/CatGAN/discriminator/CatGAN_discriminator_model_epoch{epoch+1}.pt")
     # torch.save(generator, f"mnist/CatGAN/generator/CatGAN_generator_model_epoch{epoch+1}.pt")    
 
+with open("out.temp", 'w') as fp:
+    fp.write("%f" % maxacc)
+print("hpt-result=%f" % maxacc)
+sys.stdout.flush()

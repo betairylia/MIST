@@ -188,7 +188,7 @@ def main():
             with torch.no_grad():
                 target = torch.softmax(model(x), 1) 
             
-            d = torch.randn(x.shape).to(dev)
+            d = torch.randn(x.shape, device = dev)
             d = _l2_normalize(d)
             d.requires_grad_()
             out_vadv = model(x + xi*d)
