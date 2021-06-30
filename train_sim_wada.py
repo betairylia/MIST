@@ -27,6 +27,7 @@ from datasets import *
 from utils import *
 from SiameseLoss import *
 from SIM_utils import *
+from tau_optim import *
 
 def main():
 
@@ -45,23 +46,24 @@ def main():
     parser.add_argument('--alpha_vat', type=float, default=0.25, help='alpha_vat')
     parser.add_argument('--alpha', type=int, default=1, choices=[0,1,2], help='alpha')
     parser.add_argument('--INCEvar', type=int, default=0, choices=[0,1,2], help='INCEvar')
-    # parser.add_argument('--beta', type=float, default=0.0, help='beta')
+    parser.add_argument('--beta', type=float, default=0.0, help='beta')
     parser.add_argument('--K', type=int, default=200, help='K (maximum)')
-    # parser.add_argument('--K0', type=int, default=5, help='K0 (SIM)')
+    parser.add_argument('--K0', type=int, default=5, help='K0 (SIM)')
     parser.add_argument('--K_vat', type=int, default=10, help='K (VAT)')
     parser.add_argument('--xi', type=float, default=10.0, help='xi (VAT)')
-    # parser.add_argument('--mu', type=float, default=0.045, help='mu')
-    # parser.add_argument('--gamma', type=float, default=1.5, help='gamma')
-    # parser.add_argument('--eta', type=float, default=5.0, help='eta (Marginal entropy)')
+    parser.add_argument('--mu', type=float, default=0.045, help='mu')
+    parser.add_argument('--gamma', type=float, default=1.5, help='gamma')
+    parser.add_argument('--eta', type=float, default=5.0, help='eta (Marginal entropy)')
     # parser.add_argument('--eta2', type=float, default=1.0, help='eta2 (Positive pairs)')
     parser.add_argument('--tau', type=float, default=0.05, help='tau')
+    parser.add_argument('--optimize_tau', type=int, default=0, help='0 = Fix tau; 1 = Optimize tau')
     # parser.add_argument('--tau_neg', type=float, default=0.01, help='tau_negative') # tau_neg = tau_pos 
     parser.add_argument('--rate', type=float, default=1.0, help='Negative sampling rate (0~1)')
     parser.add_argument('--aug_func', type=str, default='kNNG', help='Augmentation function (not used now)')
     
     # Pre-defined pairs
-    parser.add_argument('--K0BetaPair', type=int, default=0, choices=[0,1], help='K0BetaPair')
-    parser.add_argument('--MuEtaGamma', type=int, default=0, choices=[0,1,2], help='MuEtaGamma Pair')
+    parser.add_argument('--K0BetaPair', type=int, default=-1, choices=[-1,0,1], help='K0BetaPair')
+    parser.add_argument('--MuEtaGamma', type=int, default=-1, choices=[-1,0,1,2], help='MuEtaGamma Pair')
 
     # Worker meta-data
     parser.add_argument('--runid', type=int, default=0, help='Run ID.')
@@ -72,8 +74,8 @@ def main():
     # Log into WandB
     wandb.init(project = 'sim', config = vars(args), group = GetArgsStr(args))
 
-    InceVariants = [SiameseLoss_UB, SiameseLoss_Exact, SiameseLoss_Symmetrized]
-    SiameseLoss = InceVariants[args.INCEvar]
+    # InceVariants = [SiameseLoss_UB, SiameseLoss_Exact, SiameseLoss_Symmetrized]
+    # SiameseLoss = InceVariants[args.INCEvar]
 
     K0_beta_pairs = {
         "mnist":        [(5, 0), (7, 0)],
@@ -86,14 +88,16 @@ def main():
         "20news":       [(200, 2.0 / 3.0), (200, 4.0 / 5.0)],
     }
 
-    Mu_Eta_Gamma_pairs = [(0.045, 6.0, 1.5), (0.05, 5.0, 1.5), (0.04, 6.0, 1.5)]
+    Mu_Eta_Gamma_pairs = [(0.045, 6.0, 1.5), (0.05, 5.0, 1.5), (0.04, 6.0, 1.5), (0.045, 5.0, 1.5)]
 
-    args.K0 = K0_beta_pairs[args.dataset][args.K0BetaPair][0]
-    args.beta = K0_beta_pairs[args.dataset][args.K0BetaPair][1]
+    if args.K0BetaPair >= 0:
+        args.K0 = K0_beta_pairs[args.dataset][args.K0BetaPair][0]
+        args.beta = K0_beta_pairs[args.dataset][args.K0BetaPair][1]
 
-    args.mu = Mu_Eta_Gamma_pairs[args.MuEtaGamma][0]
-    args.eta = Mu_Eta_Gamma_pairs[args.MuEtaGamma][1]
-    args.gamma = Mu_Eta_Gamma_pairs[args.MuEtaGamma][2]
+    if args.MuEtaGamma >= 0:
+        args.mu = Mu_Eta_Gamma_pairs[args.MuEtaGamma][0]
+        args.eta = Mu_Eta_Gamma_pairs[args.MuEtaGamma][1]
+        args.gamma = Mu_Eta_Gamma_pairs[args.MuEtaGamma][2]
 
     ##########################################################################
     ''' Dataset '''
@@ -288,7 +292,7 @@ def main():
 
             ####################### Siamese loss (or I_nce) related part ###########
             ## define positive and negative loss, where tau is a fixed value
-            l_s, soft_out_agm1_itr = SiameseLoss(net, soft_out_itr, X_agm1_itr, tau, alpha)
+            l_s, soft_out_agm1_itr = SiameseLoss(net, soft_out_itr, X_agm1_itr, tau, alpha, args.INCEvar)
             
             ######################## I(X;Y) related part #######################
             ## define entropy of y
@@ -302,7 +306,10 @@ def main():
             objective = ((l_vat + l_vat1)/2) - mu*(  (eta*ent_y - c_ent) + gamma*( l_s )  )
 
             if itr % 25 == 0:
-                wandb.log({"loss": objective.detach().cpu().data})
+                wandb.log({
+                    "loss": objective.detach().cpu().data,
+                    "tau":  tau,
+                })
 
             # update the set of parameters in deep neural network by minimizing loss
             optimizer.zero_grad() 
@@ -311,9 +318,14 @@ def main():
 
             empirical_objective_loss = empirical_objective_loss + objective.data
 
+            if args.optimize_tau:
+                tau = minimize_tau(net, X_itr, X_agm1_itr, alpha, args.INCEvar)
+
         # #empirical_loss = running_loss/m
         empirical_objective_loss = empirical_objective_loss.cpu().numpy()
+
         print("average empirical objective loss is", empirical_objective_loss/m, ',')
+        print("tau is now", tau, ".")
 
         net.eval()
 

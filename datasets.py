@@ -55,6 +55,27 @@ def get_custom_feat_npy(data_dir_X, data_dir_Y):
 
     return X, Y, X.shape[0], meta['dim'], meta['nClasses']
 
+def get_two_rings():
+
+    # Make Two-Rings
+    from sklearn.datasets import make_circles
+    X, Y = make_circles(n_samples=5000,
+                    shuffle = None,
+                    noise = 0.01,
+                    random_state=True,
+                    factor = 0.4)
+
+    Y = Y.reshape(1,Y.shape[0])
+    dim = 2
+    C = 2
+
+    # print(X)
+    # print(Y)
+
+    # dsetname = "Two-Rings"
+
+    return X, Y, None, dim, C
+
 # download mnist dataset from keras, then define training dataset X and its true labels Y
 from tensorflow.keras.datasets import mnist
 
@@ -71,8 +92,8 @@ def get_mnist():
     X_tst = X_tst.reshape(num_tst, dim)
     X = np.r_[X_tr, X_tst]
     print("Size of training dataset is", X.shape)
-    X = X/255
-    #X = (2*(X/255)) - 1
+    # X = X/255
+    X = (2*(X/255)) - 1
 
     Y = np.r_[Y_tr, Y_tst]
     Y = Y.reshape(1, Y.shape[0])
@@ -262,5 +283,8 @@ def GetData(datasetName):
         X, Y, _, dim, C = get_omniglot()
     elif datasetName == "stl":
         X, Y, _, dim, C = get_imsat_stl10()
+
+    elif datasetName == "rings":
+        X, Y, _, dim, C = get_two_rings()
 
     return X, Y, _, dim, C

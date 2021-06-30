@@ -1,0 +1,72 @@
+Mu 0.04 , Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -        stl [K0-beta (  7,  0.00), alpha 1] - 94.47 +- 0.06
+Mu 0.04 , Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -   omniglot [K0-beta (  7,  0.00), alpha 2] - 25.15 +- 1.29
+Mu 0.04 , Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -       svhn [K0-beta (  7,  0.00), alpha 2] - 60.49 +- 2.92
+Mu 0.04 , Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -   cifar100 [K0-beta ( 10,  0.00), alpha 2] - 27.69 +- 0.70
+Mu 0.04 , Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -    cifar10 [K0-beta ( 10,  0.00), alpha 1] - 50.20 +- 1.28
+Mu 0.04 , Eta 6.0, Gamma 1.5 -  INCE: Symmetrized - reuters10k [K0-beta ( 50,  0.67), alpha 0] - 71.20 +- 3.93
+Mu 0.04 , Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -      mnist [K0-beta (  5,  0.00), alpha 1] - 98.06 +- 1.25
+Mu 0.05 , Eta 5.0, Gamma 1.5 -  INCE: Symmetrized -        stl [K0-beta (  7,  0.00), alpha 0] - 94.40 +- 0.10
+Mu 0.05 , Eta 5.0, Gamma 1.5 -  INCE: Symmetrized -   omniglot [K0-beta (  7,  0.00), alpha 1] - 25.02 +- 0.51
+Mu 0.05 , Eta 5.0, Gamma 1.5 -  INCE: Symmetrized -       svhn [K0-beta ( 10,  0.00), alpha 1] - 60.61 +- 4.15
+Mu 0.05 , Eta 5.0, Gamma 1.5 -  INCE: Symmetrized -   cifar100 [K0-beta ( 10,  0.00), alpha 2] - 27.75 +- 0.55
+Mu 0.05 , Eta 5.0, Gamma 1.5 -  INCE: Symmetrized -    cifar10 [K0-beta ( 15,  0.00), alpha 0] - 48.97 +- 1.89
+Mu 0.05 , Eta 5.0, Gamma 1.5 -  INCE: Symmetrized - reuters10k [K0-beta ( 50,  0.67), alpha 0] - 70.89 +- 7.08
+Mu 0.05 , Eta 5.0, Gamma 1.5 -  INCE: Symmetrized -      mnist [K0-beta (  5,  0.00), alpha 0] - 98.43 +- 0.47
+Mu 0.045, Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -        stl [K0-beta (  5,  0.00), alpha 2] - 94.47 +- 0.08
+Mu 0.045, Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -   omniglot [K0-beta (  7,  0.00), alpha 0] - 25.20 +- 0.70
+Mu 0.045, Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -       svhn [K0-beta ( 10,  0.00), alpha 0] - 60.00 +- 3.66
+Mu 0.045, Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -   cifar100 [K0-beta (  7,  0.00), alpha 0] - 27.53 +- 0.27
+Mu 0.045, Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -    cifar10 [K0-beta ( 15,  0.00), alpha 2] - 49.41 +- 1.92
+Mu 0.045, Eta 6.0, Gamma 1.5 -  INCE: Symmetrized - reuters10k [K0-beta ( 50,  0.67), alpha 2] - 73.16 +- 2.99
+Mu 0.045, Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -      mnist [K0-beta (  7,  0.00), alpha 1] - 98.67 +- 0.04
+Mu 0.04 , Eta 6.0, Gamma 1.5 -        INCE: Exact -        stl [K0-beta (  5,  0.00), alpha 1] - 94.50 +- 0.14
+Mu 0.04 , Eta 6.0, Gamma 1.5 -        INCE: Exact -   omniglot [K0-beta (  5,  0.00), alpha 1] - 25.20 +- 1.16
+Mu 0.04 , Eta 6.0, Gamma 1.5 -        INCE: Exact -       svhn [K0-beta (  7,  0.00), alpha 0] - 61.28 +- 5.00
+Mu 0.04 , Eta 6.0, Gamma 1.5 -        INCE: Exact -   cifar100 [K0-beta (  7,  0.00), alpha 0] - 27.62 +- 0.30
+Mu 0.04 , Eta 6.0, Gamma 1.5 -        INCE: Exact -    cifar10 [K0-beta ( 10,  0.00), alpha 1] - 50.64 +- 1.87
+Mu 0.04 , Eta 6.0, Gamma 1.5 -        INCE: Exact - reuters10k [K0-beta ( 50,  0.80), alpha 0] - 72.82 +- 2.84
+Mu 0.04 , Eta 6.0, Gamma 1.5 -        INCE: Exact -      mnist [K0-beta (  5,  0.00), alpha 0] - 98.41 +- 0.45
+Mu 0.05 , Eta 5.0, Gamma 1.5 -        INCE: Exact -        stl [K0-beta (  5,  0.00), alpha 2] - 94.38 +- 0.27
+Mu 0.05 , Eta 5.0, Gamma 1.5 -        INCE: Exact -   omniglot [K0-beta (  7,  0.00), alpha 0] - 24.68 +- 0.86
+Mu 0.05 , Eta 5.0, Gamma 1.5 -        INCE: Exact -       svhn [K0-beta ( 10,  0.00), alpha 2] - 58.57 +- 5.67
+Mu 0.05 , Eta 5.0, Gamma 1.5 -        INCE: Exact -   cifar100 [K0-beta (  7,  0.00), alpha 2] - 27.80 +- 0.54
+Mu 0.05 , Eta 5.0, Gamma 1.5 -        INCE: Exact -    cifar10 [K0-beta ( 15,  0.00), alpha 1] - 49.58 +- 1.79
+Mu 0.05 , Eta 5.0, Gamma 1.5 -        INCE: Exact - reuters10k [K0-beta ( 50,  0.67), alpha 2] - 74.47 +- 1.85
+Mu 0.05 , Eta 5.0, Gamma 1.5 -        INCE: Exact -      mnist [K0-beta (  7,  0.00), alpha 2] - 98.65 +- 0.09
+Mu 0.045, Eta 6.0, Gamma 1.5 -        INCE: Exact -        stl [K0-beta (  5,  0.00), alpha 2] - 94.53 +- 0.15
+Mu 0.045, Eta 6.0, Gamma 1.5 -        INCE: Exact -   omniglot [K0-beta (  7,  0.00), alpha 1] - 25.27 +- 0.54
+Mu 0.045, Eta 6.0, Gamma 1.5 -        INCE: Exact -       svhn [K0-beta ( 10,  0.00), alpha 0] - 58.36 +- 2.73
+Mu 0.045, Eta 6.0, Gamma 1.5 -        INCE: Exact -   cifar100 [K0-beta ( 10,  0.00), alpha 1] - 27.57 +- 0.56
+Mu 0.045, Eta 6.0, Gamma 1.5 -        INCE: Exact -    cifar10 [K0-beta ( 10,  0.00), alpha 0] - 49.94 +- 2.37
+Mu 0.045, Eta 6.0, Gamma 1.5 -        INCE: Exact - reuters10k [K0-beta ( 50,  0.67), alpha 1] - 71.09 +- 3.47
+Mu 0.045, Eta 6.0, Gamma 1.5 -        INCE: Exact -      mnist [K0-beta (  5,  0.00), alpha 1] - 98.68 +- 0.05
+Mu 0.04 , Eta 6.0, Gamma 1.5 -   INCE: UpperBound -        stl [K0-beta (  5,  0.00), alpha 1] - 94.44 +- 0.11
+Mu 0.04 , Eta 6.0, Gamma 1.5 -   INCE: UpperBound -   omniglot [K0-beta (  7,  0.00), alpha 0] - 24.75 +- 1.10
+Mu 0.04 , Eta 6.0, Gamma 1.5 -   INCE: UpperBound -       svhn [K0-beta ( 10,  0.00), alpha 1] - 60.89 +- 3.04
+Mu 0.04 , Eta 6.0, Gamma 1.5 -   INCE: UpperBound -   cifar100 [K0-beta (  7,  0.00), alpha 2] - 27.73 +- 0.40
+Mu 0.04 , Eta 6.0, Gamma 1.5 -   INCE: UpperBound -    cifar10 [K0-beta ( 15,  0.00), alpha 0] - 50.34 +- 2.10
+Mu 0.04 , Eta 6.0, Gamma 1.5 -   INCE: UpperBound - reuters10k [K0-beta ( 50,  0.67), alpha 1] - 72.26 +- 2.35
+Mu 0.04 , Eta 6.0, Gamma 1.5 -   INCE: UpperBound -      mnist [K0-beta (  5,  0.00), alpha 1] - 98.66 +- 0.05
+Mu 0.05 , Eta 5.0, Gamma 1.5 -   INCE: UpperBound -        stl [K0-beta (  7,  0.00), alpha 1] - 94.33 +- 0.30
+Mu 0.05 , Eta 5.0, Gamma 1.5 -   INCE: UpperBound -   omniglot [K0-beta (  7,  0.00), alpha 1] - 24.80 +- 0.89
+Mu 0.05 , Eta 5.0, Gamma 1.5 -   INCE: UpperBound -       svhn [K0-beta ( 10,  0.00), alpha 0] - 58.12 +- 3.10
+Mu 0.05 , Eta 5.0, Gamma 1.5 -   INCE: UpperBound -   cifar100 [K0-beta (  7,  0.00), alpha 0] - 27.89 +- 0.29
+Mu 0.05 , Eta 5.0, Gamma 1.5 -   INCE: UpperBound -    cifar10 [K0-beta ( 10,  0.00), alpha 0] - 48.93 +- 1.40
+Mu 0.05 , Eta 5.0, Gamma 1.5 -   INCE: UpperBound - reuters10k [K0-beta ( 50,  0.80), alpha 1] - 73.21 +- 3.07
+Mu 0.05 , Eta 5.0, Gamma 1.5 -   INCE: UpperBound -      mnist [K0-beta (  7,  0.00), alpha 1] - 98.14 +- 0.68
+Mu 0.045, Eta 6.0, Gamma 1.5 -   INCE: UpperBound -        stl [K0-beta (  5,  0.00), alpha 0] - 94.45 +- 0.13
+Mu 0.045, Eta 6.0, Gamma 1.5 -   INCE: UpperBound -   omniglot [K0-beta (  7,  0.00), alpha 0] - 24.74 +- 0.59
+Mu 0.045, Eta 6.0, Gamma 1.5 -   INCE: UpperBound -       svhn [K0-beta (  7,  0.00), alpha 0] - 61.65 +- 1.89
+Mu 0.045, Eta 6.0, Gamma 1.5 -   INCE: UpperBound -   cifar100 [K0-beta (  7,  0.00), alpha 0] - 27.57 +- 0.49
+Mu 0.045, Eta 6.0, Gamma 1.5 -   INCE: UpperBound -    cifar10 [K0-beta ( 15,  0.00), alpha 0] - 49.94 +- 1.09
+Mu 0.045, Eta 6.0, Gamma 1.5 -   INCE: UpperBound - reuters10k [K0-beta ( 50,  0.67), alpha 2] - 72.96 +- 3.65
+Mu 0.045, Eta 6.0, Gamma 1.5 -   INCE: UpperBound -      mnist [K0-beta (  5,  0.00), alpha 2] - 98.55 +- 0.29
+Mu 0.04 , Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -     20news [K0-beta (200,  0.67), alpha 0] - 38.60 +- 2.32
+Mu 0.05 , Eta 5.0, Gamma 1.5 -  INCE: Symmetrized -     20news [K0-beta (200,  0.80), alpha 2] - 38.38 +- 1.40
+Mu 0.045, Eta 6.0, Gamma 1.5 -  INCE: Symmetrized -     20news [K0-beta (200,  0.67), alpha 0] - 38.58 +- 1.13
+Mu 0.04 , Eta 6.0, Gamma 1.5 -        INCE: Exact -     20news [K0-beta (200,  0.67), alpha 2] - 39.48 +- 1.66
+Mu 0.05 , Eta 5.0, Gamma 1.5 -        INCE: Exact -     20news [K0-beta (200,  0.67), alpha 0] - 39.47 +- 2.84
+Mu 0.045, Eta 6.0, Gamma 1.5 -        INCE: Exact -     20news [K0-beta (200,  0.80), alpha 1] - 38.49 +- 2.47
+Mu 0.04 , Eta 6.0, Gamma 1.5 -   INCE: UpperBound -     20news [K0-beta (200,  0.67), alpha 0] - 38.65 +- 2.50
+Mu 0.05 , Eta 5.0, Gamma 1.5 -   INCE: UpperBound -     20news [K0-beta (200,  0.80), alpha 1] - 39.62 +- 1.62
+Mu 0.045, Eta 6.0, Gamma 1.5 -   INCE: UpperBound -     20news [K0-beta (200,  0.67), alpha 0] - 38.69 +- 1.91
