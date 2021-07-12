@@ -60,10 +60,31 @@ def get_two_rings():
     # Make Two-Rings
     from sklearn.datasets import make_circles
     X, Y = make_circles(n_samples=5000,
-                    shuffle = None,
-                    noise = 0.01,
-                    random_state=True,
-                    factor = 0.4)
+                  shuffle = None,
+                  noise = 0.01,
+                  random_state=True,
+                  factor = 0.35)
+
+    Y = Y.reshape(1,Y.shape[0])
+    dim = 2
+    C = 2
+
+    # print(X)
+    # print(Y)
+
+    # dsetname = "Two-Rings"
+
+    return X, Y, None, dim, C
+
+# TODO: change from rings to moons
+def get_two_moons():
+
+    # Make Two-Rings
+    from sklearn.datasets import make_circles
+    X, Y = make_moons(n_samples=5000,
+                  shuffle = None,
+                  noise = 0.05,
+                  random_state = True)
 
     Y = Y.reshape(1,Y.shape[0])
     dim = 2
@@ -92,8 +113,8 @@ def get_mnist():
     X_tst = X_tst.reshape(num_tst, dim)
     X = np.r_[X_tr, X_tst]
     print("Size of training dataset is", X.shape)
-    # X = X/255
-    X = (2*(X/255)) - 1
+    X = X/255
+    # X = (2*(X/255)) - 1
 
     Y = np.r_[Y_tr, Y_tst]
     Y = Y.reshape(1, Y.shape[0])
@@ -286,5 +307,15 @@ def GetData(datasetName):
 
     elif datasetName == "rings":
         X, Y, _, dim, C = get_two_rings()
+    elif datasetName == "moons":
+        X, Y, _, dim, C = get_two_moons()
 
     return X, Y, _, dim, C
+
+def GetData_VaDEEmbeddings(datasetName):
+
+    VaDEpath = "/home/betairya/RP_ML/VaDE-pytorch"
+    return get_custom_feat_npy(
+        os.path.join(VaDEpath, "VaDE_X_%s.npy" % datasetName),
+        os.path.join(VaDEpath, "VaDE_Y_%s.npy" % datasetName)
+    )

@@ -26,7 +26,7 @@ from munkres import Munkres
 from datasets import *
 from utils import *
 from SiameseLoss import *
-from SIM_utils import *
+from MIST_utils import *
 from tau_optim import *
 
 def main():
@@ -63,11 +63,13 @@ def main():
     
     # Pre-defined pairs
     parser.add_argument('--K0BetaPair', type=int, default=-1, choices=[-1,0,1], help='K0BetaPair')
-    parser.add_argument('--MuEtaGamma', type=int, default=-1, choices=[-1,0,1,2], help='MuEtaGamma Pair')
+    parser.add_argument('--MuEtaGamma', type=int, default=-1, choices=[-1,0,1,2,3], help='MuEtaGamma Pair')
 
     # Worker meta-data
     parser.add_argument('--runid', type=int, default=0, help='Run ID.')
     parser.add_argument('--keyargs', type=str, default="", help='Key variables in HP tune, splitted in commas')
+
+    parser.add_argument('--geodesic', type=int, default=0, help='Use geodesic distance based augmentation or not')
 
     args = parser.parse_args()
 
@@ -139,6 +141,15 @@ def main():
     K_vat = args.K_vat
     R = alpha_vat*distances[:,K_vat]
     R = R.reshape(X.shape[0],1)
+
+    if args.geodesic > 0:
+
+        # how many neighbors should be used to define geodesic metric, K_g =< K
+        # two rings -> Kg=15
+        K_g = K
+
+        # build geodesically nearest neighbor graph, i.e., returns goeodic_distances and geodesic indices are returned
+        _, g_indices = build_gnng(K_g, indices)
 
     end = time.time()
     print(f"{end-start} seconds by Brute-Force KNN.")
@@ -259,7 +270,7 @@ def main():
     # rate = args.rate
 
     #itr_num = 0
-    print("Start training of SIM_agm.")
+    print("Start training of MIST_agm.")
     for epoch in range(epochs):
         print("At ", epoch, "-th epoch, ")
 
@@ -278,11 +289,22 @@ def main():
             # define components at each iteration
             X_itr = X[idx_itr,:]
 
-            ########################## transformation function related part ##############
-            if beta == 0:
-                X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, indices[:,1:K0+1]) #except 20news reuters10k
+            ########################## geodesic based transformation function related part ##############
+            if args.geodesic > 0:
+
+                lgth = g_indices.shape[1]
+                if beta == 0:
+                    X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, g_indices[:,1:lgth]) 
+                else:
+                    X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, g_indices[:,int(beta*lgth):lgth])
+
+            # ########################## knn based transformation function related part ##############
             else:
-                X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, indices[:,int(beta*K0):K0+1]) #20news or reuters10k
+
+                if beta == 0:
+                    X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, indices[:,1:K0+1]) #except 20news reuters10k
+                else:
+                    X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, indices[:,int(beta*K0):K0+1]) #20news or reuters10k
 
             #################### VAT loss ################
             l_vat = return_vat_Loss(net, X_itr, xi, R[idx_itr,:])

@@ -9,7 +9,7 @@ from scipy.sparse import csr_matrix, triu
 from scipy.sparse import csr_matrix, csc_matrix, coo_matrix, lil_matrix
 from scipy.sparse import identity
 
-from SIM_utils import disable_tracking_bn_stats
+from MIST_utils import disable_tracking_bn_stats
 
 def relu(x):
     relued_x = x * (x>0)
