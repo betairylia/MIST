@@ -31,7 +31,7 @@ from tau_optim import *
 
 def main():
 
-    parser = argparse.ArgumentParser(description='SIM experiments')
+    parser = argparse.ArgumentParser(description='MIST experiments')
 
     # Set-up
     parser.add_argument('--name', type=str, default='Untitled')
@@ -48,7 +48,7 @@ def main():
     parser.add_argument('--INCEvar', type=int, default=0, choices=[0,1,2], help='INCEvar')
     parser.add_argument('--beta', type=float, default=0.0, help='beta')
     parser.add_argument('--K', type=int, default=200, help='K (maximum)')
-    parser.add_argument('--K0', type=int, default=5, help='K0 (SIM)')
+    parser.add_argument('--K0', type=int, default=5, help='K0 (MIST)')
     parser.add_argument('--K_vat', type=int, default=10, help='K (VAT)')
     parser.add_argument('--xi', type=float, default=10.0, help='xi (VAT)')
     parser.add_argument('--mu', type=float, default=0.045, help='mu')
@@ -72,9 +72,6 @@ def main():
     parser.add_argument('--geodesic', type=int, default=0, help='Use geodesic distance based augmentation or not')
 
     args = parser.parse_args()
-
-    # Log into WandB
-    wandb.init(project = 'sim', config = vars(args), group = GetArgsStr(args))
 
     # InceVariants = [SiameseLoss_UB, SiameseLoss_Exact, SiameseLoss_Symmetrized]
     # SiameseLoss = InceVariants[args.INCEvar]
@@ -327,12 +324,6 @@ def main():
             # objective of sim
             objective = ((l_vat + l_vat1)/2) - mu*(  (eta*ent_y - c_ent) + gamma*( l_s )  )
 
-            if itr % 25 == 0:
-                wandb.log({
-                    "loss": objective.detach().cpu().data,
-                    "tau":  tau,
-                })
-
             # update the set of parameters in deep neural network by minimizing loss
             optimizer.zero_grad() 
             objective.backward()
@@ -359,8 +350,6 @@ def main():
             preds = preds.reshape(1, preds.shape[0])
             clustering_acc = ReturnACC(preds[0], Y[0], C)
         print("and current clustering accuracy is", clustering_acc )
-
-        wandb.log({"accuracy": clustering_acc, "epoch": epoch})
 
 if __name__ == "__main__":
     main()
