@@ -45,25 +45,20 @@ def main():
     # HP
     parser.add_argument('--alpha_vat', type=float, default=0.25, help='alpha_vat')
     parser.add_argument('--alpha', type=int, default=1, choices=[0,1,2], help='alpha')
-    parser.add_argument('--INCEvar', type=int, default=0, choices=[0,1,2], help='INCEvar')
+    parser.add_argument('--INCEvar', type=int, default=2, choices=[0,1,2], help='Variant of InfoNCE being used. 0 = Lower bound, 1 = Exact, 2 = Symmetrized')
     parser.add_argument('--beta', type=float, default=0.0, help='beta')
     parser.add_argument('--K', type=int, default=200, help='K (maximum)')
-    parser.add_argument('--K0', type=int, default=5, help='K0 (MIST)')
-    parser.add_argument('--K_vat', type=int, default=10, help='K (VAT)')
+    parser.add_argument('--K0', type=int, default=6, help='K0 (MIST)')
+    parser.add_argument('--K_vat', type=int, default=10, help='K (for VAT adaptive radius calculation)')
     parser.add_argument('--xi', type=float, default=10.0, help='xi (VAT)')
     parser.add_argument('--mu', type=float, default=0.045, help='mu')
     parser.add_argument('--gamma', type=float, default=1.5, help='gamma')
     parser.add_argument('--eta', type=float, default=5.0, help='eta (Marginal entropy)')
-    # parser.add_argument('--eta2', type=float, default=1.0, help='eta2 (Positive pairs)')
     parser.add_argument('--tau', type=float, default=0.05, help='tau')
     parser.add_argument('--optimize_tau', type=int, default=0, help='0 = Fix tau; 1 = Optimize tau')
-    # parser.add_argument('--tau_neg', type=float, default=0.01, help='tau_negative') # tau_neg = tau_pos 
-    parser.add_argument('--rate', type=float, default=1.0, help='Negative sampling rate (0~1)')
-    parser.add_argument('--aug_func', type=str, default='kNNG', help='Augmentation function (not used now)')
     
     # Pre-defined pairs
-    parser.add_argument('--K0BetaPair', type=int, default=-1, choices=[-1,0,1], help='K0BetaPair')
-    parser.add_argument('--MuEtaGamma', type=int, default=-1, choices=[-1,0,1,2,3], help='MuEtaGamma Pair')
+    parser.add_argument('--UseSuggestedK0Beta', type=int, default=0, choices=[0,1], help='Set the value of K0 & beta to the suggested ones in the paper')
 
     # Worker meta-data
     parser.add_argument('--runid', type=int, default=0, help='Run ID.')
@@ -72,31 +67,26 @@ def main():
     parser.add_argument('--geodesic', type=int, default=0, help='Use geodesic distance based augmentation or not')
 
     args = parser.parse_args()
+    
+    args.rate = 1.0
 
     # InceVariants = [SiameseLoss_UB, SiameseLoss_Exact, SiameseLoss_Symmetrized]
     # SiameseLoss = InceVariants[args.INCEvar]
 
     K0_beta_pairs = {
-        "mnist":        [(5, 0), (7, 0)],
-        "stl":          [(5, 0), (7, 0)],
-        "omniglot":     [(5, 0), (7, 0)],
-        "cifar100":     [(7, 0), (10,0)],
-        "svhn":         [(7, 0), (10,0)],
-        "cifar10":      [(10,0), (15,0)],
-        "reuters10k":   [(50, 2.0 / 3.0), (50, 4.0 / 5.0)],
-        "20news":       [(200, 2.0 / 3.0), (200, 4.0 / 5.0)],
+        "mnist":        [(7, 0)],
+        "stl":          [(7, 0)],
+        "omniglot":     [(7, 0)],
+        "cifar100":     [(7, 0)],
+        "svhn":         [(7, 0)],
+        "cifar10":      [(15,0)],
+        "reuters10k":   [(50, 4.0 / 5.0)],
+        "20news":       [(200, 4.0 / 5.0)],
     }
 
-    Mu_Eta_Gamma_pairs = [(0.045, 6.0, 1.5), (0.05, 5.0, 1.5), (0.04, 6.0, 1.5), (0.045, 5.0, 1.5)]
-
-    if args.K0BetaPair >= 0:
-        args.K0 = K0_beta_pairs[args.dataset][args.K0BetaPair][0]
-        args.beta = K0_beta_pairs[args.dataset][args.K0BetaPair][1]
-
-    if args.MuEtaGamma >= 0:
-        args.mu = Mu_Eta_Gamma_pairs[args.MuEtaGamma][0]
-        args.eta = Mu_Eta_Gamma_pairs[args.MuEtaGamma][1]
-        args.gamma = Mu_Eta_Gamma_pairs[args.MuEtaGamma][2]
+    if args.UseSuggestedK0Beta > 0:
+        args.K0 = K0_beta_pairs[args.dataset][0][0]
+        args.beta = K0_beta_pairs[args.dataset][0][1]
 
     ##########################################################################
     ''' Dataset '''
@@ -156,7 +146,7 @@ def main():
     ##########################################################################
 
     R = torch.tensor(R.astype('f')).to(dev)
-    X = torch.tensor(X.astype('f')).to(dev) # this unlabeled dataset (set of feature vectors) is input of IMSAT
+    X = torch.tensor(X.astype('f')).to(dev) # this unlabeled dataset (set of feature vectors) is input of MIST
 
     # define archtechture of MLP(Multi Layer Perceptron). 
     # in this net, batch-normalization (bn) is used. 
@@ -219,7 +209,7 @@ def main():
     net = net.to(dev)
 
     ##########################################################################
-    ''' Training of IMSAT '''
+    ''' Training of MIST '''
     ##########################################################################
 
     # decide hyperparameter values for imsat training
