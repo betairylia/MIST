@@ -8,6 +8,7 @@ This is the implementation of "Deep Clustering via Mutual InformationMaximizatio
 [to be uploaded]
 
 2. Run `train_mist.py` to run the MIST experiment. hyper-parameters can be assigned via command-line arguments.  
+use `python train_mist.py -h` for instructions.
 
 For example, use following command to run our experiments on MNIST:
 ```bash
