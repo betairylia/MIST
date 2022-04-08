@@ -1,6 +1,6 @@
 # MIST
 
-This is the implementation of "Deep Clustering via Mutual InformationMaximization with Local Smoothness andTopological Invariant Constraints".
+This is the implementation of "Deep Clustering via Mutual Information Maximization with Local Smoothness and Topological Invariant Constraints".
 
 ## Usage
 
