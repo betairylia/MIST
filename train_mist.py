@@ -29,6 +29,8 @@ from SiameseLoss import *
 from MIST_utils import *
 from tau_optim import *
 
+import wandb
+
 def main():
 
     parser = argparse.ArgumentParser(description='MIST experiments')
@@ -100,6 +102,9 @@ def main():
         args.mu = Mu_Eta_Gamma_pairs[args.MuEtaGamma][0]
         args.eta = Mu_Eta_Gamma_pairs[args.MuEtaGamma][1]
         args.gamma = Mu_Eta_Gamma_pairs[args.MuEtaGamma][2]
+
+    # Log into WandB
+    wandb.init(project = 'MIST-further', entity = 'betairylia', config = vars(args), group = GetArgsStr(args))
 
     ##########################################################################
     ''' Dataset '''
@@ -246,6 +251,9 @@ def main():
 
     ## define optimizer for set of parameters in deep neural network
     ## lr is the learning rate of parameter vector, betas are the lr of gradient and second moment of gradient
+
+    # TODO: AdamW + weight decay
+    # TODO: LR scheduling
     optimizer = optim.Adam(net.parameters(), 
                             lr=0.002, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
 
@@ -345,6 +353,22 @@ def main():
             if args.optimize_tau:
                 tau = minimize_tau(net, X_itr, X_agm1_itr, alpha, args.INCEvar)
 
+            wandb.log({
+                "loss/VAT": ((l_vat + l_vat1)/2).detach().cpu().data,
+
+                "loss/MI-raw": (ent_y - c_ent).detach().cpu().data,
+                "loss/MI-raw-with-eta": (eta*ent_y - c_ent).detach().cpu().data,
+                "loss/MI": (mu * args.MI * (eta*ent_y - c_ent)).detach().cpu().data,
+                
+                "loss/InfoNCE-raw": (l_s).detach().cpu().data,
+                "loss/InfoNCE": (mu * gamma * l_s).detach().cpu().data,
+
+                "loss/total": objective.detach().cpu().data,
+                "tau": tau,
+                
+                "step": epoch * m + itr
+            })
+
         # #empirical_loss = running_loss/m
         empirical_objective_loss = empirical_objective_loss.cpu().numpy()
 
@@ -362,6 +386,9 @@ def main():
             preds = preds.reshape(1, preds.shape[0])
             clustering_acc = ReturnACC(preds[0], Y[0], C)
         print("and current clustering accuracy is", clustering_acc )
+
+        wandb.log({"avg_loss": empirical_objective_loss, "accuracy": clustering_acc, "epoch": epoch})
+        
         sys.stdout.flush()
 
     print("hpt-result=%f" % clustering_acc)
