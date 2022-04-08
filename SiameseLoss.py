@@ -9,7 +9,19 @@ from scipy.sparse import csr_matrix, triu
 from scipy.sparse import csr_matrix, csc_matrix, coo_matrix, lil_matrix
 from scipy.sparse import identity
 
-from MIST_utils import disable_tracking_bn_stats
+from MIST_utils import disable_tracking_bn_stats, kl
+
+def iic(p1, p2):
+
+    P = torch.matmul(torch.t(p1), p2) / p1.shape[0]
+    P = ( torch.t(P) +  P ) / 2
+    P_marginal1 = torch.sum(P, dim=1)
+    P_marginal2 = torch.sum(P, dim=0)
+    P_marginal_mat = torch.matmul(P_marginal2, P_marginal1)
+
+    loss = -kl(P, P_marginal_mat)
+
+    return loss
 
 def SiameseLoss(model, soft_out1, x_agm, t1, alpha, var):
 
@@ -51,13 +63,15 @@ def SiameseLoss(model, soft_out1, x_agm, t1, alpha, var):
           ln = -torch.sum(torch.tril(critic,-1) + torch.triu(critic,1)) /(m*(m-1))
           l_s = (1 - (1/m))*(lp + ln)
 
-        else:
+        elif var == 2:
           ## symmetrized info nce
           I_nce1 = np.log(m) + torch.mean( torch.log( torch.diag( torch.softmax(critic,1),0 ) ) )
           I_nce0 = np.log(m) + torch.mean( torch.log( torch.diag( torch.softmax(critic,0),0 ) ) )
           l_s = (I_nce1 + I_nce0) / 2
     
-
+        elif var == 3:
+          ## IIC-ish
+          l_s = iic(soft_out1, soft_out2)
         
 
     return l_s, soft_out2

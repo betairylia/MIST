@@ -45,7 +45,7 @@ def main():
     # HP
     parser.add_argument('--alpha_vat', type=float, default=0.25, help='alpha_vat')
     parser.add_argument('--alpha', type=int, default=1, choices=[0,1,2], help='alpha')
-    parser.add_argument('--INCEvar', type=int, default=0, choices=[0,1,2], help='INCEvar')
+    parser.add_argument('--INCEvar', type=int, default=0, choices=[0,1,2,3], help='INCEvar')
     parser.add_argument('--beta', type=float, default=0.0, help='beta')
     parser.add_argument('--K', type=int, default=200, help='K (maximum)')
     parser.add_argument('--K0', type=int, default=5, help='K0 (MIST)')
@@ -60,6 +60,9 @@ def main():
     # parser.add_argument('--tau_neg', type=float, default=0.01, help='tau_negative') # tau_neg = tau_pos 
     parser.add_argument('--rate', type=float, default=1.0, help='Negative sampling rate (0~1)')
     parser.add_argument('--aug_func', type=str, default='kNNG', help='Augmentation function (not used now)')
+
+    parser.add_argument('--IICOnly', type=int, default=0, help='Run the IIC Only experiment.')
+    parser.add_argument('--MI', type=int, default=1, help='Include the raw MI term (y,y\') or not.')
     
     # Pre-defined pairs
     parser.add_argument('--K0BetaPair', type=int, default=-1, choices=[-1,0,1], help='K0BetaPair')
@@ -303,26 +306,34 @@ def main():
                 else:
                     X_agm1_itr, idx_agm1_itr = get_agm(X, idx_itr, indices[:,int(beta*K0):K0+1]) #20news or reuters10k
 
-            #################### VAT loss ################
-            l_vat = return_vat_Loss(net, X_itr, xi, R[idx_itr,:])
-            l_vat1 = return_vat_Loss(net, X_agm1_itr, xi, R[idx_agm1_itr,:])
-
             soft_out_itr = torch.softmax(net(X_itr) , 1)
 
             ####################### Siamese loss (or I_nce) related part ###########
             ## define positive and negative loss, where tau is a fixed value
             l_s, soft_out_agm1_itr = SiameseLoss(net, soft_out_itr, X_agm1_itr, tau, alpha, args.INCEvar)
-            
-            ######################## I(X;Y) related part #######################
-            ## define entropy of y
-            ent_y = entropy(torch.cat((soft_out_itr, soft_out_agm1_itr),0))
 
-            ## define shannon conditional entropy loss H(p(y|x)) named by c_ent.
-            c_ent = conditional_entropy(torch.cat((soft_out_itr, soft_out_agm1_itr),0))
-            
-            ######################### our objective defined ##################        
-            # objective of sim
-            objective = ((l_vat + l_vat1)/2) - mu*(  (eta*ent_y - c_ent) + gamma*( l_s )  )
+            if args.IICOnly:
+
+                ######################### our objective defined ##################        
+                # objective of IIC
+                objective = l_s
+
+            else:
+
+                #################### VAT loss ################
+                l_vat = return_vat_Loss(net, X_itr, xi, R[idx_itr,:])
+                l_vat1 = return_vat_Loss(net, X_agm1_itr, xi, R[idx_agm1_itr,:])
+                
+                ######################## I(X;Y) related part #######################
+                ## define entropy of y
+                ent_y = entropy(torch.cat((soft_out_itr, soft_out_agm1_itr),0))
+
+                ## define shannon conditional entropy loss H(p(y|x)) named by c_ent.
+                c_ent = conditional_entropy(torch.cat((soft_out_itr, soft_out_agm1_itr),0))
+                
+                ######################### our objective defined ##################        
+                # objective of sim
+                objective = ((l_vat + l_vat1)/2) - mu*( args.MI * (eta*ent_y - c_ent) + gamma*( l_s )  )
 
             # update the set of parameters in deep neural network by minimizing loss
             optimizer.zero_grad() 
@@ -339,6 +350,7 @@ def main():
 
         print("average empirical objective loss is", empirical_objective_loss/m, ',')
         print("tau is now", tau, ".")
+        sys.stdout.flush()
 
         net.eval()
 
@@ -350,6 +362,10 @@ def main():
             preds = preds.reshape(1, preds.shape[0])
             clustering_acc = ReturnACC(preds[0], Y[0], C)
         print("and current clustering accuracy is", clustering_acc )
+        sys.stdout.flush()
+
+    print("hpt-result=%f" % clustering_acc)
+    sys.stdout.flush()
 
 if __name__ == "__main__":
     main()
