@@ -4,8 +4,7 @@ This is the implementation of "Deep Clustering via Mutual Information Maximizati
 
 ## Usage
 
-1. Download the datasets used in the paper:
-[to be uploaded]
+1. Download the datasets used in the paper: https://drive.google.com/file/d/1h-1xx8MrgsRHwAKh4geltcn0-NeCVd_m/view?usp=sharing 
 
 2. Run `train_mist.py` to run the MIST experiment. hyper-parameters can be assigned via command-line arguments.  
 use `python train_mist.py -h` for instructions.
